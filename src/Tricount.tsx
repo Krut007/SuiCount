@@ -7,8 +7,10 @@ import {
 import type { SuiObjectData } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { useNetworkVariable } from "./networkConfig";
+import { useState } from "react";
 
-export function Counter({ id }: { id: string }) {
+
+export function Tricount({ id }: { id: string }) {
   const counterPackageId = useNetworkVariable("counterPackageId");
   const suiClient = useSuiClient();
   const currentAccount = useCurrentAccount();
@@ -31,6 +33,8 @@ export function Counter({ id }: { id: string }) {
       showOwner: true,
     },
   });
+
+  
 
   const executeMoveCall = (method: "increment" | "reset") => {
     const tx = new Transaction();
@@ -68,9 +72,21 @@ export function Counter({ id }: { id: string }) {
   const ownedByCurrentAccount =
     getCounterFields(data.data)?.owner === currentAccount?.address;
 
+    const [name, setName] = useState("");  
+
   return (
     <div className="max-w-md mx-auto p-4 mt-20">
-      <h1 className="text-3xl font-bold mb4">Counter {id}</h1>
+      <h1 className="text-3xl font-bold mb4">TriCount</h1>
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2">Account address:</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="input input-bordered w-full"
+          placeholder="Enter account"
+        />
+      </div>
 
       <div className="flex flex-col gap-2">
         <p>Count: {getCounterFields(data.data)?.value}</p>

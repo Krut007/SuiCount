@@ -1,8 +1,8 @@
 import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
 import { isValidSuiObjectId } from "@mysten/sui/utils";
 import { useState } from "react";
-import { Counter } from "../Counter";
-import { CreateCounter } from "../CreateCounter";
+import { Tricount } from "../Tricount";
+import { CreateCounter } from "../CreateTricount";
 import Navbar from "../components/Navbar";
 
 const Main = () => {
@@ -20,7 +20,7 @@ const Main = () => {
       <div className="flex justify-center  h-screen">
         {currentAccount ? (
             counterId ? (
-              <Counter id={counterId} />
+              <Tricount id={counterId} />
             ) : (
               <CreateCounter
                 onCreated={(id) => {
