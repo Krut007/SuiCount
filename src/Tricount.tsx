@@ -9,8 +9,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { useNetworkVariable } from "./networkConfig";
 import { useState } from "react";
 
-
-export function Tricount({ id }: { id: string }) {
+export function TriCount({ id }: { id: string }) {
   const counterPackageId = useNetworkVariable("counterPackageId");
   const suiClient = useSuiClient();
   const currentAccount = useCurrentAccount();
@@ -20,7 +19,6 @@ export function Tricount({ id }: { id: string }) {
         transactionBlock: bytes,
         signature,
         options: {
-          // Raw effects are required so the effects can be reported back to the wallet
           showRawEffects: true,
           showEffects: true,
         },
@@ -34,22 +32,16 @@ export function Tricount({ id }: { id: string }) {
     },
   });
 
-  
+  const [amount, setAmount] = useState(0);
+  const [balanceAddress, setBalanceAddress] = useState("");
+  const [balance, setBalance] = useState<number | null>(null);
 
-  const executeMoveCall = (method: "increment" | "reset") => {
+  const executeAddMoney = () => {
     const tx = new Transaction();
-
-    if (method === "reset") {
-      tx.moveCall({
-        arguments: [tx.object(id), tx.pure.u64(0)],
-        target: `${counterPackageId}::counter::set_value`,
- });
-    } else {
-      tx.moveCall({
-        arguments: [tx.object(id)],
-        target: `${counterPackageId}::counter::increment`,
-      });
-    }
+    tx.moveCall({
+      arguments: [tx.object(id), tx.pure.u64(amount), tx.pure.vector("address", [balanceAddress])],
+      target: `${counterPackageId}::tricount::addMoney`,
+    });
 
     signAndExecute(
       {
@@ -63,49 +55,69 @@ export function Tricount({ id }: { id: string }) {
     );
   };
 
+  const executeGetBalance = () => {
+    const tx = new Transaction();
+    tx.moveCall({
+      arguments: [tx.object(id), tx.pure.address(balanceAddress)],
+      target: `${counterPackageId}::tricount::balance`,
+    });
+
+    signAndExecute(
+      {
+        transaction: tx,
+      },
+      {
+        onSuccess: async (result) => {
+          const returnValue = 0;
+          if (returnValue) {
+            setBalance(Number(returnValue));
+            alert(`Balance: ${returnValue}`);
+          } else {
+            alert("Failed to retrieve balance.");
+          }
+        },
+      },
+    );
+  };
+
   if (isPending) return <p>Loading...</p>;
 
   if (error) return <p>Error: {error.message}</p>;
 
   if (!data.data) return <p>Not found</p>;
 
-  const ownedByCurrentAccount =
-    getCounterFields(data.data)?.owner === currentAccount?.address;
-
-    const [name, setName] = useState("");  
-
   return (
     <div className="max-w-md mx-auto p-4 mt-20">
       <h1 className="text-3xl font-bold mb4">TriCount</h1>
       <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Account address:</label>
+        <label className="block text-gray-700 text-sm font-bold mb-2">Amount:</label>
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(Number(e.target.value))}
+          className="input input-bordered w-full"
+          placeholder="Enter amount"
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2">Balance address:</label>
         <input
           type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={balanceAddress}
+          onChange={(e) => setBalanceAddress(e.target.value)}
           className="input input-bordered w-full"
-          placeholder="Enter account"
+          placeholder="Enter account address"
         />
       </div>
 
       <div className="flex flex-col gap-2">
-        <p>Count: {getCounterFields(data.data)?.value}</p>
-        <div className="flex flex-row gap-2">
-          <button
-            className="btn btn-primary"
-            onClick={() => executeMoveCall("increment")}
-          >
-            Increment
-          </button>
-          {ownedByCurrentAccount ? (
-            <button
-              className="btn btn-secondary"
-              onClick={() => executeMoveCall("reset")}
-            >
-              Reset
-            </button>
-          ) : null}
-        </div>
+        <button className="btn btn-primary" onClick={executeAddMoney}>
+          Add Money
+        </button>
+        <button className="btn btn-secondary" onClick={executeGetBalance}>
+          Check Balance
+        </button>
+        {balance !== null && <p>Balance: {balance}</p>}
       </div>
     </div>
   );
@@ -116,5 +128,5 @@ function getCounterFields(data: SuiObjectData) {
     return null;
   }
 
- return data.content.fields as { value: number; owner: string };
+  return data.content.fields as { value: number; owner: string };
 }
